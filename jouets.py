@@ -1,7 +1,7 @@
 def topDown(prices):
     memo = {}
     def dfs(i, money):
-        if i == len(prices) - 1:
+        if i == len(prices):
             return 0
 
         if (i, money) in prices:
@@ -31,7 +31,8 @@ def bottomUp(prices):
 Complexité: Boucle imbriquée sur n => O(n^2)
 '''
 
-x = [0,0,0,4,2,3,0,0,0,2]
+x = [0,0,0,4,2,3,0,0,0,5]
 y = topDown(x)
 yy = bottomUp(x)
+print(y)
 print(yy)
