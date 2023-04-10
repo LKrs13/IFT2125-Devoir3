@@ -1,6 +1,9 @@
 from copy import deepcopy
 from ford_fulkerson import ford_fulkerson
 import sys
+import igraph as ig
+import pandas as pd
+
 
 def get_file_name():
     if len(sys.argv) != 2:
@@ -9,11 +12,13 @@ def get_file_name():
     file_name = f'data/{sys.argv[1]}'
     return file_name
 
+
 def print_output(file_name, answer):
     output = [f'{x} {y}' for x, y in answer]
     output = '\n'.join(output)
     with open(f"resultat_{file_name[5:-4]}.txt", 'w') as file:
         file.write(output)
+
 
 def parse_input_file(file_name):
     with open(file_name) as f:
@@ -41,6 +46,7 @@ def parse_input_file(file_name):
 
         return graph, k
 
+
 def solution(graph, k):
     res = set()
     max_flow = min_max_flow = ford_fulkerson(deepcopy(graph), 0, len(graph) - 1)
@@ -59,11 +65,11 @@ def solution(graph, k):
             return
         
         for r in range(len(graph)):
-            for c in range(len(graph)):
+            for c in range(r + 1, len(graph)):
                 arc = graph[r][c]
 
-                # Avoid duplicates
-                if arc == 0 or (r, c) in arcs or (c, r) in arcs:
+                # Avoid non-existent edges
+                if arc == 0:
                     continue
 
                 graph[r][c] = 0
@@ -78,11 +84,45 @@ def solution(graph, k):
     backtrack(k, max_flow, set())
     return res
 
+
+def getModifiedGraph(graph, res):
+    for edge in res:
+        graph[edge[0]][edge[1]] = 0
+
+    return graph
+
+
+def plotGraph(graph, outName):
+
+    nodes = list(range(0, len(graph)))
+    a = pd.DataFrame(graph, index=nodes, columns=nodes)
+    A = a.values
+    weights = A[A.nonzero()]
+
+    g = ig.Graph.Adjacency((A > 0).tolist())
+    maxFlow = ig.Graph.maxflow(g, 0, len(graph)-1, capacity=[int(w) for w in weights])
+
+    edgeLabels = []
+    for i in range(len(weights)):
+        edgeLabels.append(f'{int(maxFlow.flow[i])}/{weights[i]}')
+
+    g.vs['label'] = nodes
+    g.es['weight'] = weights
+    g.es['label'] = edgeLabels
+    g.es['color'] = ['red' if (edge['label'][0] != '0') else 'black' for edge in g.es]
+
+    ig.plot(g, layout="lgl", target=outName)
+
+
 def main():
     file_name = get_file_name()
     graph, k = parse_input_file(file_name)
     res = solution(graph, k)
     print_output(file_name, res)
+
+    plotGraph(graph, 'original_'+file_name[5:8]+'.png')
+    plotGraph(getModifiedGraph(graph, res), 'modifie_'+file_name[5:8]+'.png')
+
 
 if __name__ == "__main__":
     main()
